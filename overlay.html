@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat da Twitch - Windows 98</title>
+<!-- Bibliotecas para melhorar a aparência -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Poppins:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    /* Cores padrão Windows 98 */
+    --face: #c0c0c0;
+    --face-light: #dfdfdf;
+    --face-dark: #808080;
+    --ink: #0a0a0a;
+    --navy: #000080;
+    --navy-2: #1084d0;
+    
+    /* Customizáveis */
+    --win-width: 420px;
+    --win-height: 620px;
+    --win-opacity: 1;
+    --win-radius: 0px;
+    
+    /* Alinhamento do texto */
+    --text-align: left;
+    
+    /* Emote grande (mensagem só com emote) */
+    --big-emote-extra: 36px;
+    
+    --titlebar-active-1: var(--navy);
+    --titlebar-active-2: var(--navy-2);
+    --titlebar-inactive-1: #7b7b7b;
+    --titlebar-inactive-2: #a9a9a9;
+    --titlebar-text: #ffffff;
+    
+    --chat-bg: #ffffff;
+    --chat-text: #000000;
+    --user-text: inherit;
+    --highlight-bg: var(--navy);
+    --highlight-text: #ffffff;
+    --highlight-user: #ffff00;
+    --system-bg: #ffffcc;
+    --system-text: #800000;
+    
+    /* Tipografia */
+    --font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, "Segoe UI", sans-serif;
+    --font-size: 13px;
+    --line-height: 1.4;
+    
+    /* Espaçamento */
+    --msg-padding-y: 1px;
+    --msg-padding-x: 4px;
+    --msg-gap: 0px;
+    --badge-gap: 2px;
+    --emote-gap: 1px;
+    
+    /* Elementos */
+    --show-badges: inline-block;
+    --show-emotes: inline-block;
+    --show-animations: slide-in 160ms ease-out both;
+    --scroll-auto: auto;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-family);
+    font-size: 11px;
+    color: #000;
+    -webkit-font-smoothing: none;
+    padding: 6px;
+  }
+
+  .app {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    width: var(--win-width);
+    height: var(--win-height);
+    opacity: var(--win-opacity);
+    transition: width 150ms ease, height 150ms ease;
+  }
+
+  /* ---------------- janela ---------------- */
+  .window {
+    background: var(--face);
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--win-radius);
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+
+  .titlebar {
+    height: 18px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 2px;
+    background: linear-gradient(90deg, var(--titlebar-active-1), var(--titlebar-active-2));
+    color: var(--titlebar-text);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0;
+    user-select: none;
+  }
+
+  .modal-open .main-window .titlebar {
+    background: linear-gradient(90deg, var(--titlebar-inactive-1), var(--titlebar-inactive-2));
+    color: #e6e6e6;
+  }
+
+  .panel-open .main-window .titlebar {
+    background: linear-gradient(90deg, var(--titlebar-active-1), var(--titlebar-active-2));
+    color: var(--titlebar-text);
+  }
+
+  .titlebar .tb-icon { display: flex; flex: 0 0 auto; }
+  .titlebar .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 1;
+  }
+  .tb-buttons { display: flex; gap: 1px; flex: 0 0 auto; }
+
+  .tbtn {
+    width: 16px;
+    height: 14px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--face);
+    color: #000;
+    border: none;
+    font-family: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif;
+    font-size: 9px;
+    line-height: 1;
+    cursor: default;
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+  .tbtn:active {
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--ink),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--face-dark);
+  }
+  .tbtn.active {
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--ink),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--face-dark);
+    background: var(--face-light);
+  }
+  /* Ícones Lucide nos botões da titlebar */
+  .tbtn svg { width: 11px; height: 11px; display: block; }
+
+  .menubar {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 1px;
+    padding: 2px 0 3px;
+    font-size: 11px;
+    user-select: none;
+  }
+  .menubar span {
+    padding: 1px 6px;
+    cursor: default;
+  }
+  .menubar span:hover,
+  .menubar span:focus {
+    background: var(--navy);
+    color: #fff;
+    outline: none;
+  }
+
+  /* ---------------- área do chat ---------------- */
+  .chat {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 1px;
+    padding: 2px;
+    overflow-y: var(--scroll-auto);
+    overflow-x: hidden;
+    background: var(--chat-bg);
+    color: var(--chat-text);
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+  }
+
+  .row {
+    padding: var(--msg-padding-y) var(--msg-padding-x);
+    margin-bottom: var(--msg-gap);
+    font-size: var(--font-size);
+    line-height: var(--line-height);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    animation: var(--show-animations);
+    font-family: var(--font-family);
+    text-align: var(--text-align);
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(-7px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row { animation: none; }
+  }
+
+  .row.highlight {
+    background: var(--highlight-bg);
+    color: var(--highlight-text);
+  }
+  .row.highlight .user { color: var(--highlight-user) !important; }
+  .row.highlight .sep { color: var(--highlight-text); }
+
+  .row.system {
+    background: var(--system-bg);
+    color: var(--system-text);
+  }
+  .row.system .sys-prefix { font-weight: 700; }
+
+  .badge {
+    display: var(--show-badges);
+    width: 16px;
+    height: 16px;
+    margin-right: var(--badge-gap);
+    vertical-align: -3px;
+    image-rendering: pixelated;
+  }
+
+  .emote {
+    display: var(--show-emotes);
+    height: calc(var(--font-size) + 16px);
+    margin: -2px var(--emote-gap);
+    vertical-align: middle;
+  }
+
+  .user {
+    font-weight: 700;
+    cursor: default;
+    color: var(--user-text);
+  }
+
+  .msg-text { white-space: pre-wrap; }
+  .msg-text.big-emote .emote, .emote.big { height: calc(var(--font-size) + var(--big-emote-extra)) !important; margin: 2px var(--emote-gap) !important; }
+
+  /* ---------------- barra de status ---------------- */
+  .statusbar {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 2px;
+    margin-top: 3px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .status-panel {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 5px;
+    min-width: 0;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark);
+  }
+  .status-panel.grow { flex: 1 1 auto; }
+  .status-panel span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    background: var(--face-dark);
+    box-shadow: inset 1px 1px #ffffff, inset -1px -1px var(--ink);
+  }
+  .dot.online { background: #009300; }
+  .dot.connecting { background: #d18b00; }
+  .dot.offline { background: #a00000; }
+
+  /* ---------------- barra de rolagem win98 ---------------- */
+  .chat::-webkit-scrollbar { width: 16px; height: 16px; }
+  .chat::-webkit-scrollbar-track {
+    background: var(--face-light);
+  }
+  .chat::-webkit-scrollbar-track-piece {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='2' height='2'><rect width='2' height='2' fill='%23ffffff'/><rect width='1' height='1' fill='%23c0c0c0'/><rect x='1' y='1' width='1' height='1' fill='%23c0c0c0'/></svg>");
+  }
+  .chat::-webkit-scrollbar-thumb {
+    background: var(--face);
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+  .chat::-webkit-scrollbar-button:single-button {
+    background-color: var(--face);
+    background-repeat: no-repeat;
+    background-position: center;
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+  .chat::-webkit-scrollbar-button:single-button:vertical:decrement {
+    height: 16px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4'><path d='M3.5 0L7 4H0z' fill='%23000'/></svg>");
+  }
+  .chat::-webkit-scrollbar-button:single-button:vertical:increment {
+    height: 16px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4'><path d='M3.5 0L7 4H0z' fill='%23000' transform='rotate(180 3.5 2)'/></svg>");
+  }
+  .chat::-webkit-scrollbar-corner { background: var(--face); }
+
+  /* ---------------- painel lateral ---------------- */
+  .custom-panel {
+    width: 280px;
+    height: var(--win-height);
+    max-height: 100%;
+    display: none;
+    flex-direction: column;
+    animation: panel-in 150ms ease-out;
+  }
+  .custom-panel.open { display: flex; }
+
+  @keyframes panel-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 1px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--face);
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+  }
+
+  .panel-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 0 2px;
+  }
+  .ptab {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 2px 4px;
+    text-align: center;
+    background: var(--face);
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+    cursor: default;
+  }
+  .ptab.active {
+    background: var(--face-light);
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--ink),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--face-dark);
+  }
+
+  .tab-content { display: none; flex-direction: column; gap: 6px; }
+  .tab-content.active { display: flex; }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .section-title {
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .field-row .label { flex: 1 1 auto; min-width: 0; }
+  .field-row .value { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
+
+  .w98-input {
+    width: 100%;
+    padding: 3px 4px;
+    background: #ffffff;
+    border: none;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 11px;
+    color: #000;
+    outline: none;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+  }
+  .w98-input.sm { width: 52px; text-align: center; }
+  .w98-input.xs { width: 42px; text-align: center; }
+
+  .w98-select {
+    width: 100%;
+    padding: 2px 4px;
+    background: #ffffff;
+    border: none;
+    font-family: inherit;
+    font-size: 11px;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+  }
+
+  .w98-range {
+    width: 100%;
+    appearance: none;
+    height: 4px;
+    background: var(--face-dark);
+    box-shadow: inset 1px 1px var(--ink);
+  }
+  .w98-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 11px;
+    height: 21px;
+    background: var(--face);
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+
+  .color-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .color-input {
+    width: 44px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    gap: 5px;
+    cursor: default;
+  }
+
+  input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    flex: 0 0 auto;
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    background: #ffffff;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--face-dark),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--ink);
+    cursor: default;
+  }
+  input[type="checkbox"]:checked::after {
+    content: "\2714";
+    position: absolute;
+    left: 1px;
+    top: -1px;
+    font-size: 11px;
+    line-height: 13px;
+    color: #000;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .btn {
+    flex: 1 1 auto;
+    min-height: 23px;
+    padding: 3px 6px;
+    background: var(--face);
+    border: none;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 11px;
+    color: #000;
+    cursor: default;
+    box-shadow:
+      inset -1px -1px var(--ink),
+      inset 1px 1px #ffffff,
+      inset -2px -2px var(--face-dark),
+      inset 2px 2px var(--face-light);
+  }
+  .btn:active {
+    padding: 4px 5px 2px 7px;
+    box-shadow:
+      inset -1px -1px #ffffff,
+      inset 1px 1px var(--ink),
+      inset -2px -2px var(--face-light),
+      inset 2px 2px var(--face-dark);
+  }
+
+  /* ---------------- diálogos ---------------- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 10;
+  }
+  .modal[hidden] { display: none; }
+
+  .dialog {
+    width: 340px;
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+  }
+
+  .dialog-body {
+    padding: 10px 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #000;
+  }
+
+  .group {
+    margin: 0;
+    padding: 7px 8px;
+    border: 1px solid var(--face-dark);
+    box-shadow: inset 1px 1px #ffffff;
+  }
+  .group legend {
+    padding: 0 3px;
+    font-size: 11px;
+  }
+
+  .dialog-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .spacer { flex: 1 1 auto; }
+
+  .btn.default { font-weight: 700; }
+  .error {
+    margin: 0;
+    color: #a00000;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .error[hidden] { display: none; }
+
+  .help-list {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 11px;
+    line-height: 1.55;
+  }
+  .help-list li { margin-bottom: 3px; }
+  .kbd {
+    padding: 0 3px;
+    background: #ffffff;
+    box-shadow: inset 1px 1px var(--face-dark), inset -1px -1px #ffffff;
+    font-family: inherit;
+    font-size: 10px;
+  }
+
+  /* ===== Tema Frutiger Aero (essência: céu + água + natureza + gloss) ===== */
+  .app[data-theme="frutigeraqua"] {
+    /* fundo atmosférico de céu (gradiente), nunca plano */
+  }
+  .app[data-theme="frutigeraqua"] .main-container {
+    background: linear-gradient(180deg, #BDEBFB 0%, #E1F5FE 45%, #C8E6C9 100%);
+    border-radius: 16px;
+  }
+  .app[data-theme="frutigeraqua"] .window {
+    background: linear-gradient(180deg, color-mix(in srgb, #FFFFFF 78%, transparent) 0%, color-mix(in srgb, var(--chat-bg) 55%, transparent) 60%, color-mix(in srgb, var(--system-bg) 45%, transparent) 100%);
+    backdrop-filter: blur(12px) saturate(1.6);
+    -webkit-backdrop-filter: blur(12px) saturate(1.6);
+    border-radius: 14px;
+    box-shadow:
+      0 10px 40px rgba(2, 136, 209, 0.28),
+      0 2px 6px rgba(0,0,0,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      inset 0 -1px 0 rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  /* brilho especular (gloss) no topo */
+  .app[data-theme="frutigeraqua"] .window::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 42%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.15) 60%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* bolhas decorativas (natureza + tecnologia) */
+  .app[data-theme="frutigeraqua"] .window::after {
+    content: "";
+    position: absolute;
+    bottom: 8px; right: 10px;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.85), rgba(79,195,247,0.35) 60%, rgba(38,166,154,0.15) 100%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.5),
+      -28px -18px 0 -18px rgba(129,199,132,0.55),
+      -40px 6px 0 -22px rgba(255,229,127,0.5),
+      18px -30px 0 -20px rgba(79,195,247,0.45);
+    pointer-events: none;
+    z-index: 0;
+    animation: frutiger-bubble 6s ease-in-out infinite;
+  }
+  @keyframes frutiger-bubble {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .app[data-theme="frutigeraqua"] .titlebar,
+  .app[data-theme="frutigeraqua"] .chat,
+  .app[data-theme="frutigeraqua"] .statusbar,
+  .app[data-theme="frutigeraqua"] .menubar {
+    position: relative;
+    z-index: 1;
+  }
+  .app[data-theme="frutigeraqua"] .titlebar {
+    background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.1) 100%), linear-gradient(90deg, var(--titlebar-active-1), var(--titlebar-active-2));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.1);
+    border-radius: 10px 10px 0 0;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .app[data-theme="frutigeraqua"] .chat {
+    background: color-mix(in srgb, var(--chat-bg) 55%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .app[data-theme="frutigeraqua"] .custom-panel .window {
+    background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(225,245,254,0.7));
+  }
+  .app[data-theme="frutigeraqua"] .custom-panel .panel-body {
+    background: rgba(232,245,233,0.55);
+  }
+  .app[data-theme="frutigeraqua"] .status-panel {
+    background: rgba(255,255,255,0.45);
+    border-radius: 6px;
+  }
+  /* botões gel (glossy) */
+  .app[data-theme="frutigeraqua"] .tbtn,
+  .app[data-theme="frutigeraqua"] .btn,
+  .app[data-theme="frutigeraqua"] .ptab {
+    background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.45) 45%, rgba(79,195,247,0.35) 100%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 8px;
+    box-shadow:
+      0 2px 4px rgba(2,136,209,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.95),
+      inset 0 -1px 0 rgba(0,0,0,0.08);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .app[data-theme="frutigeraqua"] .tbtn:hover,
+  .app[data-theme="frutigeraqua"] .btn:hover,
+  .app[data-theme="frutigeraqua"] .ptab:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 8px rgba(2,136,209,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.95);
+  }
+  .app[data-theme="frutigeraqua"] .w98-input,
+  .app[data-theme="frutigeraqua"] .w98-select {
+    background: rgba(255,255,255,0.7);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.06), inset 0 -1px 0 rgba(255,255,255,0.8);
+  }
+  /* destaque com brilho verde-água */
+  .app[data-theme="frutigeraqua"] .row.highlight {
+    background: linear-gradient(90deg, #26A69A, #4FC3F7);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  /* Bolhas flutuantes (camada decorativa) */
+  .bubbles-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    display: none;
+  }
+  .app[data-theme="frutigeraqua"] .bubbles-layer { display: block; }
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(191,252,255,.85) 45%, rgba(79,195,247,.55) 75%, rgba(38,166,154,.25) 100%);
+    box-shadow:
+      inset 0 -2px 4px rgba(0,100,180,.25),
+      inset 0 2px 3px rgba(255,255,255,1),
+      0 0 12px rgba(79,195,247,.7),
+      0 0 4px rgba(255,255,255,.9);
+    opacity: 0;
+    animation: bubbleRise linear infinite;
+  }
+  @keyframes bubbleRise {
+    0%   { transform: translateY(30px) scale(.5); opacity: 0; }
+    8%   { opacity: .95; }
+    85%  { opacity: .75; }
+    100% { transform: translateY(-150px) scale(1.15); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bubble { animation: none !important; }
+  }
+
+  /* ===== Refino Frutiger Aero no estilo do blog p.exe (aqua + mint + laranja) ===== */
+  .app[data-theme="frutigeraqua"] .main-container {
+    background:
+      radial-gradient(circle at 22px 34px, rgba(255,255,255,.70) 0 3px, transparent 4px),
+      radial-gradient(circle at 180px 120px, rgba(255,255,255,.42) 0 2px, transparent 3px),
+      radial-gradient(circle at 310px 70px, rgba(191,252,255,.46) 0 4px, transparent 5px),
+      linear-gradient(180deg, #B8FBFF 0%, #77DFFF 55%, #4EA9DF 100%);
+    background-size: 360px 360px, 420px 420px, 520px 520px, cover;
+    animation: pexeWaterShift 28s linear infinite;
+  }
+  @keyframes pexeWaterShift {
+    from { background-position: 0 0, 0 0, 0 0, 0 0; }
+    to   { background-position: 150px -300px, -230px 230px, 260px 520px, 0 0; }
+  }
+  .app[data-theme="frutigeraqua"] .window {
+    animation: pexeFloat 7s ease-in-out infinite;
+  }
+  @keyframes pexeFloat {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+  .app[data-theme="frutigeraqua"] .titlebar {
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255,255,255,.9), transparent 16%),
+      linear-gradient(to bottom, var(--titlebar-active-2) 0%, var(--titlebar-active-1) 50%, var(--titlebar-active-1) 100%) !important;
+    color: var(--titlebar-text, #FFFFFF) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35), 0 0 8px rgba(255,255,255,.6) !important;
+  }
+  .app[data-theme="frutigeraqua"] .window::before {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px; top: 8px;
+    height: 28px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, rgba(255,255,255,.52), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 0;
+  }
+  .app[data-theme="frutigeraqua"] .window::after {
+    content: "";
+    position: absolute;
+    bottom: 8px; right: 10px;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(79,195,247,.35) 60%, rgba(38,166,154,.15) 100%);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.5),
+      -28px -18px 0 -18px rgba(129,199,132,.55),
+      -40px 6px 0 -22px rgba(255,229,127,.5),
+      18px -30px 0 -20px rgba(79,195,247,.45);
+    pointer-events: none;
+    z-index: 0;
+    animation: pexeBubbleBlink 12s infinite;
+  }
+  @keyframes pexeBubbleBlink {
+    0%,85%,100% { opacity: 0; }
+    88%,96%      { opacity: .9; }
+  }
+  .app[data-theme="frutigeraqua"] .user {
+    color: var(--user-text, #C75000) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  }
+  .app[data-theme="frutigeraqua"] .row.highlight {
+    background: linear-gradient(90deg, var(--highlight-bg), var(--titlebar-active-2)) !important;
+    color: var(--highlight-text, #FFFFFF) !important;
+  }
+  .app[data-theme="frutigeraqua"] .row.highlight .user {
+    color: var(--highlight-user, #E65100) !important;
+  }
+  .app[data-theme="frutigeraqua"] .row.system {
+    color: var(--system-text, #1B5E20) !important;
+  }
+  .app[data-theme="frutigeraqua"] .status-panel {
+    background: linear-gradient(to bottom, rgba(220,255,255,.85), rgba(150,230,255,.55), rgba(190,255,220,.45)) !important;
+    border: 2px solid rgba(255,255,255,.9) !important;
+    border-radius: 22px !important;
+    color: var(--chat-text, #002840) !important;
+    box-shadow: 0 0 12px rgba(255,157,0,.25), inset 0 3px 6px rgba(255,255,255,.95) !important;
+  }
+  .app[data-theme="frutigeraqua"] .titlebar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 0 30%, rgba(255,255,255,.65) 44%, transparent 58%);
+    transform: translateX(-130%);
+    animation: pexeShine 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pexeShine {
+    0%,55%,100% { transform: translateX(-130%); }
+    70%          { transform: translateX(130%); }
+  }
+  .app[data-theme="frutigeraqua"] .dot.online {
+    background: #6DFFAD;
+    box-shadow: 0 0 6px #6DFFAD;
+  }
+
+  /* ===== Detalhes em verde e laranja (Frutiger Aero) ===== */
+  /* bolhas coloridas: algumas verdes, algumas laranjas */
+  .app[data-theme="frutigeraqua"] .bubble:nth-child(3n) {
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(109,255,173,.85) 45%, rgba(35,223,121,.55) 75%, rgba(27,94,32,.25) 100%);
+    box-shadow: inset 0 2px 3px rgba(255,255,255,1), 0 0 12px rgba(109,255,173,.7);
+  }
+  /* Camada de onda d'água (base da janela) */
+  .wave-layer {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 26px;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    display: none;
+  }
+  .app[data-theme="frutigeraqua"] .wave-layer { display: block; }
+  .wave-layer::before {
+    content: "";
+    position: absolute;
+    left: -50%; right: -50%; bottom: 0;
+    height: 40px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 40' preserveAspectRatio='none'><path d='M0 20 Q150 0 300 20 T600 20 T900 20 T1200 20 V40 H0 Z' fill='rgba(79,195,247,0.35)'/><path d='M0 24 Q150 8 300 24 T600 24 T900 24 T1200 24 V40 H0 Z' fill='rgba(35,223,121,0.25)'/></svg>") repeat-x;
+    background-size: 600px 40px;
+    animation: waveMove 8s linear infinite;
+  }
+  @keyframes waveMove {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-300px); }
+  }
+
+  /* Lente de luz (lens flare) suave */
+  .lensflare-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+    display: none;
+  }
+  .app[data-theme="frutigeraqua"] .lensflare-layer { display: block; }
+  .lensflare-layer::before {
+    content: "";
+    position: absolute;
+    top: -20px; right: -30px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,229,127,.35) 25%, rgba(79,195,247,.18) 55%, transparent 75%);
+    animation: flareDrift 14s ease-in-out infinite;
+    mix-blend-mode: screen;
+  }
+  .lensflare-layer::after {
+    content: "";
+    position: absolute;
+    top: 40px; right: 60px;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(109,255,173,.45) 0%, transparent 70%);
+    animation: flareDrift 14s ease-in-out infinite reverse;
+    mix-blend-mode: screen;
+  }
+  @keyframes flareDrift {
+    0%,100% { transform: translate(0,0); opacity: .7; }
+    50%      { transform: translate(-12px, 8px); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wave-layer::before, .lensflare-layer::before, .lensflare-layer::after { animation: none !important; }
+  }
+
+  .app[data-theme="frutigeraqua"] .bubble:nth-child(4n) {
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(255,180,100,.85) 45%, rgba(255,140,0,.55) 75%, rgba(230,81,0,.25) 100%);
+    box-shadow: inset 0 2px 3px rgba(255,255,255,1), 0 0 12px rgba(255,157,0,.7);
+  }
+  /* titlebar com faixa verde-laranja */
+  .app[data-theme="frutigeraqua"] .titlebar::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #23DF79, #FF9D00, #23DF79);
+    pointer-events: none;
+    z-index: 2;
+  }
+  /* menubar com toque verde */
+  .app[data-theme="frutigeraqua"] .menubar span:hover,
+  .app[data-theme="frutigeraqua"] .menubar span:focus {
+    background: linear-gradient(180deg, #23DF79, #1B5E20);
+    color: #FFFFFF;
+  }
+  /* status dot conectando em laranja */
+  .app[data-theme="frutigeraqua"] .dot.connecting { background: #FF9D00; box-shadow: 0 0 6px #FF9D00; }
+  .app[data-theme="frutigeraqua"] .dot.offline { background: #E65100; }
+  /* badges/contadores com acento verde */
+  .app[data-theme="frutigeraqua"] #countPanel {
+    background: linear-gradient(to bottom, rgba(109,255,173,.55), rgba(35,223,121,.35)) !important;
+    color: #1B5E20 !important;
+    border: 1px solid rgba(255,255,255,.8) !important;
+  }
+  /* borda da janela com brilho verde-laranja */
+  .app[data-theme="frutigeraqua"] .window {
+    outline: 1px solid rgba(35,223,121,.35);
+    outline-offset: -2px;
+  }
+  /* scrollbar thumb com gradiente verde */
+  .app[data-theme="frutigeraqua"] .chat::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #23DF79, #FF9D00);
+  }
+  /* inputs com foco laranja */
+  .app[data-theme="frutigeraqua"] .w98-input:focus,
+  .app[data-theme="frutigeraqua"] .w98-select:focus {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.06), 0 0 0 2px rgba(255,157,0,.5);
+  }
+  /* botões ativos com acento verde */
+  .app[data-theme="frutigeraqua"] .ptab.active {
+    background: linear-gradient(180deg, #6DFFAD, #23DF79);
+    color: #1B5E20;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app[data-theme="frutigeraqua"] .main-container,
+    .app[data-theme="frutigeraqua"] .window,
+    .app[data-theme="frutigeraqua"] .titlebar::after { animation: none !important; }
+  }
+  /* Acessibilidade global: respeitar prefers-reduced-motion em todos os temas */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    .row { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="main-container" id="mainContainer">
+    <div class="window main-window" id="mainWindow">
+      <div class="titlebar">
+        <span class="tb-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <rect x="1" y="1" width="14" height="11" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+            <rect x="3" y="3" width="10" height="7" fill="#000080"/>
+            <rect x="3" y="3" width="10" height="1" fill="#1084d0"/>
+            <rect x="7" y="12" width="2" height="2" fill="#808080"/>
+            <rect x="5" y="14" width="6" height="1" fill="#808080"/>
+          </svg>
+        </span>
+        <span class="title" id="windowTitle">Chat da Twitch</span>
+        <span class="tb-buttons">
+          <button class="tbtn" id="btnPanelToggle" title="Personalizar" aria-label="Personalizar"><i data-lucide="sliders-horizontal"></i></button>
+          <button class="tbtn" id="btnMin" title="Minimizar" aria-label="Minimizar"><i data-lucide="minus"></i></button>
+          <button class="tbtn" id="btnMax" title="Maximizar" aria-label="Maximizar"><i data-lucide="square"></i></button>
+          <button class="tbtn" id="btnClose" title="Configurar canal" aria-label="Configurar"><i data-lucide="x"></i></button>
+        </span>
+      </div>
+
+      <div class="menubar">
+        <span id="menuSetup" tabindex="0" role="button">Arquivo</span>
+        <span id="menuChannel" tabindex="0" role="button">Canal</span>
+        <span id="menuView" tabindex="0" role="button">Exibir</span>
+        <span id="menuHelp" tabindex="0" role="button">Ajuda</span>
+      </div>
+
+      <div class="bubbles-layer" id="bubblesLayer" aria-hidden="true"></div>
+      <div class="wave-layer" aria-hidden="true"></div>
+      <div class="lensflare-layer" aria-hidden="true"></div>
+      <div class="chat" id="chat" role="log" aria-live="polite" aria-label="Mensagens do chat"></div>
+
+      <div class="statusbar">
+        <div class="status-panel grow">
+          <span class="dot offline" id="statusDot"></span>
+          <span id="statusText">Desconectado</span>
+        </div>
+        <div class="status-panel" id="countPanel"><span id="countText">0 msgs</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- painel lateral de personalização -->
+  <div class="custom-panel" id="customPanel">
+    <div class="window">
+      <div class="titlebar">
+        <span class="tb-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+            <rect x="2" y="3" width="12" height="2" fill="#000"/>
+            <rect x="2" y="7" width="12" height="2" fill="#000"/>
+            <rect x="2" y="11" width="12" height="2" fill="#000"/>
+          </svg>
+        </span>
+        <span class="title">Personalizar</span>
+        <span class="tb-buttons">
+          <button class="tbtn" id="btnPanelClose" title="Fechar" aria-label="Fechar">&#10005;</button>
+        </span>
+      </div>
+      <div class="panel-body">
+        <div class="panel-tabs">
+          <button class="ptab active" data-tab="tab-temas">Temas</button>
+          <button class="ptab" data-tab="tab-geral">Geral</button>
+          <button class="ptab" data-tab="tab-cores">Cores</button>
+          <button class="ptab" data-tab="tab-texto">Texto & Espaçamento</button>
+          <button class="ptab" data-tab="tab-janela">Janela</button>
+          <button class="ptab" data-tab="tab-elementos">Elementos</button>
+        </div>
+
+        <!-- Temas -->
+        <div class="tab-content active" id="tab-temas">
+          <div class="section">
+            <div class="section-title">Tema</div>
+            <div class="field-row">
+              <span class="label">Escolher tema</span>
+            </div>
+            <select class="w98-select" id="pTheme">
+              <option value="win98">Windows 98 (padrão)</option>
+              <option value="winxp">Windows XP</option>
+              <option value="win7">Windows 7 (Aero)</option>
+              <option value="win10">Windows 10</option>
+              <option value="win11">Windows 11</option>
+              <option value="natal">🎄 Natal</option>
+              <option value="halloween">🎃 Halloween</option>
+              <option value="pascoa">🐰 Páscoa</option>
+              <option value="carnaval">🎭 Carnaval</option>
+              <option value="anonovo">🎆 Ano Novo</option>
+              <option value="dark">🌙 Modo Escuro</option>
+              <option value="retro">📺 Retro (fósforo verde)</option>
+              <option value="neon">💡 Neon</option>
+              <option value="ocean">🌊 Oceano</option>
+              <option value="sakura">🌸 Sakura</option>
+               <option value="frutigeraqua">🫧 Frutiger Aqua (glass)</option>
+            </select>
+            <p class="hint">Aplicar um tema sobrescreve as cores e estilos atuais. Você ainda pode personalizar depois.</p>
+          </div>
+        </div>
+        <!-- Geral -->
+        <div class="tab-content" id="tab-geral">
+          <div class="section">
+            <div class="section-title">Chat</div>
+            <div class="field-row">
+              <span class="label">Mensagens visíveis</span>
+              <div class="value">
+                <input class="w98-input xs" id="pLimit" type="number" min="5" max="100" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Rolagem automática</span>
+              <label class="check"><input type="checkbox" id="pAutoScroll" checked></label>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Animações</div>
+            <div class="field-row">
+              <span class="label">Estilo de entrada</span>
+            </div>
+            <select class="w98-select" id="pAnim">
+              <option value="slide-in 160ms ease-out both">Deslizar (padrão)</option>
+              <option value="fade-in 140ms ease-out both">Fade</option>
+              <option value="slide-up 150ms ease-out both">Subir</option>
+               <option value="bounceIn 500ms ease-out both">Bounce (Animate.css)</option>
+               <option value="zoomIn 350ms ease-out both">Zoom (Animate.css)</option>
+               <option value="flipInX 400ms ease-out both">Flip (Animate.css)</option>
+               <option value="fadeInUp 250ms ease-out both">Fade Up (Animate.css)</option>
+               <option value="lightSpeedInRight 400ms ease-out both">Speed In (Animate.css)</option>
+              <option value="none">Sem animação</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cores -->
+        <div class="tab-content" id="tab-cores">
+           <p class="hint" id="themeColorLabel">Cores salvas por tema. Tema atual: —</p>
+          <div class="section">
+            <div class="section-title">Janela</div>
+            <div class="color-row">
+              <span>Barra de título (ativa)</span>
+              <input type="color" class="color-input" id="pTitle1">
+            </div>
+            <div class="color-row">
+              <span>Barra de título (gradiente)</span>
+              <input type="color" class="color-input" id="pTitle2">
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Chat</div>
+            <div class="color-row">
+              <span>Fundo do chat</span>
+              <input type="color" class="color-input" id="pChatBg">
+            </div>
+            <div class="color-row">
+              <span>Texto padrão</span>
+              <input type="color" class="color-input" id="pChatText">
+            </div>
+            <div class="color-row">
+              <span>Cor do nickname</span>
+              <input type="color" class="color-input" id="pUserText">
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Destaque & Sistema</div>
+            <div class="color-row">
+              <span>Fundo destaque</span>
+              <input type="color" class="color-input" id="pHighBg">
+            </div>
+            <div class="color-row">
+              <span>Texto destaque</span>
+              <input type="color" class="color-input" id="pHighText">
+            </div>
+            <div class="color-row">
+              <span>Nickname em destaque</span>
+              <input type="color" class="color-input" id="pHighUser">
+            </div>
+            <div class="color-row">
+              <span>Fundo sistema</span>
+              <input type="color" class="color-input" id="pSysBg">
+            </div>
+            <div class="color-row">
+              <span>Texto sistema</span>
+              <input type="color" class="color-input" id="pSysText">
+            </div>
+          </div>
+          <div class="panel-actions">
+            <button class="btn" id="btnResetThemeColors">Restaurar cores do tema atual</button>
+          </div>
+        </div>
+
+        <!-- Texto & Espaçamento -->
+        <div class="tab-content" id="tab-texto">
+          <div class="section">
+            <div class="section-title">Fonte</div>
+            <select class="w98-select" id="pFontFamily">
+              <option value='"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif'>MS Sans Serif</option>
+              <option value='Tahoma, "Segoe UI", sans-serif'>Tahoma</option>
+              <option value='Arial, Helvetica, sans-serif'>Arial</option>
+              <option value='Verdana, Geneva, sans-serif'>Verdana</option>
+              <option value='"Comic Sans MS", cursive, sans-serif'>Comic Sans MS</option>
+              <option value='"Courier New", Courier, monospace'>Courier New</option>
+              <option value='"Pixel Arial", Arial, sans-serif'>Pixel Arial</option>
+               <option value='Inter, "Segoe UI", Tahoma, sans-serif'>Inter (Google Fonts)</option>
+               <option value='Roboto, "Segoe UI", Tahoma, sans-serif'>Roboto (Google Fonts)</option>
+               <option value='Poppins, "Segoe UI", Tahoma, sans-serif'>Poppins (Google Fonts)</option>
+               <option value='"JetBrains Mono", "Courier New", monospace'>JetBrains Mono (Google Fonts)</option>
+               <option value='Nunito, "Segoe UI", Tahoma, sans-serif'>Nunito (Frutiger Aero)</option>
+            </select>
+            <div class="field-row">
+              <span class="label">Tamanho da fonte</span>
+              <div class="value">
+                <input class="w98-input xs" id="pFontSize" type="number" min="10" max="22" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Altura da linha</span>
+              <div class="value">
+                <input class="w98-input xs" id="pLineHeight" type="number" min="1.0" max="2.0" step="0.1">
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Alinhamento</div>
+            <div class="field-row">
+              <span class="label">Alinhamento das mensagens</span>
+            </div>
+            <select class="w98-select" id="pTextAlign">
+              <option value="left">Esquerda</option>
+              <option value="center">Centro</option>
+              <option value="right">Direita</option>
+            </select>
+          </div>
+          <div class="section">
+            <div class="section-title">Emote grande (mensagem só com emote)</div>
+            <div class="field-row">
+              <span class="label">Tamanho extra do emote</span>
+              <div class="value">
+                <input class="w98-input xs" id="pBigEmoteExtra" type="number" min="10" max="80" step="1">
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Espaçamento</div>
+            <div class="field-row">
+              <span class="label">Padding vertical</span>
+              <div class="value">
+                <input class="w98-input xs" id="pPadY" type="number" min="0" max="6" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Padding horizontal</span>
+              <div class="value">
+                <input class="w98-input xs" id="pPadX" type="number" min="2" max="12" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Espaço entre mensagens</span>
+              <div class="value">
+                <input class="w98-input xs" id="pMsgGap" type="number" min="0" max="6" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Espaço entre badges</span>
+              <div class="value">
+                <input class="w98-input xs" id="pBadgeGap" type="number" min="0" max="4" step="1">
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Espaço entre emotes</span>
+              <div class="value">
+                <input class="w98-input xs" id="pEmoteGap" type="number" min="0" max="4" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Janela -->
+        <div class="tab-content" id="tab-janela">
+          <div class="section">
+            <div class="section-title">Tamanho</div>
+            <div class="field-row">
+              <span class="label">Largura</span>
+              <div class="value">
+                <input class="w98-input sm" id="pWidth" type="number" min="280" max="900" step="10"> px
+              </div>
+            </div>
+            <div class="field-row">
+              <span class="label">Altura</span>
+              <div class="value">
+                <input class="w98-input sm" id="pHeight" type="number" min="400" max="900" step="10"> px
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">Aparência</div>
+            <div class="field-row">
+              <span class="label">Opacidade</span>
+              <span class="value"><span id="pOpacityVal">100</span>%</span>
+            </div>
+            <input type="range" class="w98-range" id="pOpacity" min="40" max="100" step="5">
+            <div class="field-row">
+              <span class="label">Arredondamento</span>
+              <div class="value">
+                <input class="w98-input xs" id="pRadius" type="number" min="0" max="12" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Elementos -->
+        <div class="tab-content" id="tab-elementos">
+          <div class="section">
+            <div class="section-title">Exibição</div>
+            <label class="check"><input type="checkbox" id="pShowBadges" checked> Mostrar badges</label>
+            <label class="check"><input type="checkbox" id="pShowEmotes" checked> Mostrar emotes</label>
+            <label class="check"><input type="checkbox" id="pShowHighlight" checked> Destacar mensagens</label>
+            <label class="check"><input type="checkbox" id="pShowStatus" checked> Mostrar barra de status</label>
+            <label class="check"><input type="checkbox" id="pShowCount" checked> Mostrar contador</label>
+             <label class="check"><input type="checkbox" id="pShowConfetti" checked> Efeitos de confete (mensagens destacadas)</label>
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <button class="btn" id="btnReset">Restaurar padrões</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- configuração do canal -->
+<div class="modal" id="setupModal" hidden>
+  <div class="window dialog" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <div class="titlebar">
+      <span class="tb-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <rect x="1" y="1" width="14" height="11" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+          <rect x="3" y="3" width="10" height="7" fill="#000080"/>
+          <rect x="3" y="3" width="10" height="1" fill="#1084d0"/>
+          <rect x="7" y="12" width="2" height="2" fill="#808080"/>
+          <rect x="5" y="14" width="6" height="1" fill="#808080"/>
+        </svg>
+      </span>
+      <span class="title" id="setupTitle">Conectar ao Twitch</span>
+      <span class="tb-buttons">
+        <button class="tbtn" id="btnSetupClose" title="Fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </span>
+    </div>
+    <div class="dialog-body">
+      <p class="hint">Digite o nome do canal que você quer exibir. O overlay apenas lê o chat, não envia mensagens.</p>
+      <div class="field">
+        <label for="inputChannel">Canal da Twitch:</label>
+        <input class="w98-input" id="inputChannel" placeholder="seucanal" autocomplete="off" spellcheck="false">
+      </div>
+      <fieldset class="group">
+        <legend>Opções rápidas</legend>
+        <div class="field-row">
+          <label class="inline" for="inputLimit2">Mensagens visíveis:</label>
+          <input class="w98-input num" id="inputLimit2" type="number" min="5" max="100" step="1" value="25">
+        </div>
+        <div class="field-row">
+          <label class="inline" for="inputFont2">Tamanho da fonte:</label>
+          <input class="w98-input num" id="inputFont2" type="number" min="10" max="22" step="1" value="13">
+        </div>
+        <label class="check"><input type="checkbox" id="checkBadges" checked> Mostrar badges</label>
+        <label class="check"><input type="checkbox" id="checkEmotes" checked> Mostrar emotes</label>
+      </fieldset>
+      <p class="error" id="setupError" hidden></p>
+      <div class="dialog-buttons">
+        <button class="btn" id="btnPreview" type="button">Prévia</button>
+        <span class="spacer"></span>
+        <button class="btn" id="btnCancel" type="button">Cancelar</button>
+        <button class="btn default" id="btnConnect" type="button">Conectar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ajuda -->
+<div class="modal" id="helpModal" hidden>
+  <div class="window dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="titlebar">
+      <span class="tb-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+          <rect x="1" y="1" width="14" height="11" fill="#c0c0c0" stroke="#000" stroke-width="1"/>
+          <rect x="3" y="3" width="10" height="7" fill="#000080"/>
+          <rect x="3" y="3" width="10" height="1" fill="#1084d0"/>
+          <rect x="7" y="12" width="2" height="2" fill="#808080"/>
+          <rect x="5" y="14" width="6" height="1" fill="#808080"/>
+        </svg>
+      </span>
+      <span class="title" id="helpTitle">Ajuda — como usar no OBS</span>
+      <span class="tb-buttons">
+        <button class="tbtn" id="btnHelpClose" title="Fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </span>
+    </div>
+    <div class="dialog-body">
+      <ol class="help-list">
+        <li>No OBS, adicione uma fonte <b>Navegador</b> na sua cena.</li>
+        <li>Marque <b>Arquivo local</b> e selecione o <span class="kbd">overlay.html</span>.</li>
+        <li>Use o painel <b>Personalizar</b> (botão ≡) para ajustar largura, altura e cores.</li>
+        <li>Abra a fonte (botão direito &rarr; Interagir) e conecte ao seu canal.</li>
+      </ol>
+      <p class="hint">
+        <b>Dicas:</b><br>
+        &bull; Para já abrir conectado, use <span class="kbd">overlay.html?channel=seucanal</span><br>
+        &bull; Tudo fica salvo neste navegador.<br>
+        &bull; Suporte a emotes da Twitch, 7TV, BTTV e FFZ.
+      </p>
+      <div class="dialog-buttons">
+        <span class="spacer"></span>
+        <button class="btn default" id="btnHelpOk" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "win98chat.settings.v2";
+  var CUSTOM_KEY = "win98chat.custom.v2";
+
+  var DEFAULTS = {
+    channel: "",
+    limit: 25,
+    fontSize: 13,
+    showBadges: true,
+    showEmotes: true
+  };
+
+  var CUSTOM_DEFAULTS = {
+    winWidth: 420,
+    winHeight: 620,
+    winOpacity: 1,
+    winRadius: 0,
+    titlebarActive1: "#000080",
+    titlebarActive2: "#1084d0",
+    chatBg: "#ffffff",
+    chatText: "#000000",
+    userText: "inherit",
+    highlightBg: "#000080",
+    highlightText: "#ffffff",
+    highlightUser: "#ffff00",
+    systemBg: "#ffffcc",
+    systemText: "#800000",
+    fontFamily: '"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif',
+    fontSize: 13,
+    lineHeight: 1.4,
+    padY: 1,
+    padX: 4,
+    msgGap: 0,
+    badgeGap: 2,
+    emoteGap: 1,
+     textAlign: "left",
+     bigEmoteExtra: 36,
+      theme: "win98",
+    limit: 25,
+    autoScroll: true,
+    animation: "slide-in 160ms ease-out both",
+    showBadges: true,
+    showEmotes: true,
+    showHighlight: true,
+    showStatus: true,
+    showCount: true,
+    showConfetti: true,
+    themeColors: {}
+  };
+
+  var THEMES = {
+    win98: { titlebarActive1:"#000080", titlebarActive2:"#1084d0", chatBg:"#ffffff", chatText:"#000000", userText:"#000080", highlightBg:"#000080", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#ffffcc", systemText:"#800000", fontFamily:'"MS Sans Serif", "Microsoft Sans Serif", Tahoma, sans-serif', winRadius:0, winOpacity:1 },
+    winxp: { titlebarActive1:"#0a246a", titlebarActive2:"#a6caf0", chatBg:"#ffffff", chatText:"#000000", userText:"#0a246a", highlightBg:"#316ac5", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#ffffcc", systemText:"#800000", fontFamily:'Tahoma, "Segoe UI", sans-serif', winRadius:0, winOpacity:1 },
+    win7: { titlebarActive1:"#1e5799", titlebarActive2:"#7db9e8", chatBg:"#f0f0f0", chatText:"#000000", userText:"#0066cc", highlightBg:"#0078d7", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#fff8dc", systemText:"#800000", fontFamily:'"Segoe UI", Tahoma, sans-serif', winRadius:8, winOpacity:0.95 },
+    win10: { titlebarActive1:"#0078d7", titlebarActive2:"#0078d7", chatBg:"#ffffff", chatText:"#1f1f1f", userText:"#005fb8", highlightBg:"#0078d7", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#fff4ce", systemText:"#800000", fontFamily:'"Segoe UI", Tahoma, sans-serif', winRadius:0, winOpacity:1 },
+    win11: { titlebarActive1:"#0067c0", titlebarActive2:"#4cc2ff", chatBg:"#f3f3f3", chatText:"#1a1a1a", userText:"#0067c0", highlightBg:"#0067c0", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#fff4ce", systemText:"#800000", fontFamily:'"Segoe UI Variable", "Segoe UI", Tahoma, sans-serif', winRadius:8, winOpacity:0.97 },
+    natal: { titlebarActive1:"#c0392b", titlebarActive2:"#27ae60", chatBg:"#fff5f5", chatText:"#1a1a1a", userText:"#c0392b", highlightBg:"#c0392b", highlightText:"#ffffff", highlightUser:"#ffd700", systemBg:"#fff8e1", systemText:"#800000", fontFamily:'"Comic Sans MS", cursive, sans-serif', winRadius:8, winOpacity:1 },
+    halloween: { titlebarActive1:"#ff6600", titlebarActive2:"#1a1a1a", chatBg:"#1a1a1a", chatText:"#ff8c00", userText:"#ff6600", highlightBg:"#ff6600", highlightText:"#000000", highlightUser:"#ffff00", systemBg:"#2d1b00", systemText:"#ff8c00", fontFamily:'"Comic Sans MS", cursive, sans-serif', winRadius:4, winOpacity:0.95 },
+    pascoa: { titlebarActive1:"#9b59b6", titlebarActive2:"#f1c40f", chatBg:"#fffaf0", chatText:"#4a235a", userText:"#9b59b6", highlightBg:"#9b59b6", highlightText:"#ffffff", highlightUser:"#ffd700", systemBg:"#fef9e7", systemText:"#800000", fontFamily:'"Comic Sans MS", cursive, sans-serif', winRadius:12, winOpacity:1 },
+    carnaval: { titlebarActive1:"#e91e63", titlebarActive2:"#ffeb3b", chatBg:"#fffde7", chatText:"#1a1a1a", userText:"#e91e63", highlightBg:"#e91e63", highlightText:"#ffffff", highlightUser:"#ffd700", systemBg:"#fce4ec", systemText:"#800000", fontFamily:'"Comic Sans MS", cursive, sans-serif', winRadius:8, winOpacity:1 },
+    anonovo: { titlebarActive1:"#1a1a1a", titlebarActive2:"#ffd700", chatBg:"#0d0d0d", chatText:"#ffd700", userText:"#ffd700", highlightBg:"#ffd700", highlightText:"#000000", highlightUser:"#ffffff", systemBg:"#1a1a1a", systemText:"#ffd700", fontFamily:'"Segoe UI", Tahoma, sans-serif', winRadius:4, winOpacity:0.97 },
+    dark: { titlebarActive1:"#2d2d2d", titlebarActive2:"#3d3d3d", chatBg:"#1e1e1e", chatText:"#d4d4d4", userText:"#569cd6", highlightBg:"#0078d7", highlightText:"#ffffff", highlightUser:"#ffff00", systemBg:"#2d2d2d", systemText:"#d4d4d4", fontFamily:'"Segoe UI", Tahoma, sans-serif', winRadius:4, winOpacity:1 },
+    retro: { titlebarActive1:"#003300", titlebarActive2:"#006600", chatBg:"#000000", chatText:"#00ff00", userText:"#00cc00", highlightBg:"#00ff00", highlightText:"#000000", highlightUser:"#ffffff", systemBg:"#001a00", systemText:"#00ff00", fontFamily:'"Courier New", Courier, monospace', winRadius:0, winOpacity:1 },
+    neon: { titlebarActive1:"#ff00ff", titlebarActive2:"#00ffff", chatBg:"#0a0a0a", chatText:"#00ffff", userText:"#ff00ff", highlightBg:"#ff00ff", highlightText:"#000000", highlightUser:"#ffff00", systemBg:"#1a001a", systemText:"#ff00ff", fontFamily:'"Courier New", Courier, monospace', winRadius:6, winOpacity:0.97 },
+    ocean: { titlebarActive1:"#006994", titlebarActive2:"#00a8cc", chatBg:"#e0f7fa", chatText:"#004d40", userText:"#006994", highlightBg:"#006994", highlightText:"#ffffff", highlightUser:"#ffd700", systemBg:"#b2ebf2", systemText:"#006064", fontFamily:'"Segoe UI", Tahoma, sans-serif', winRadius:8, winOpacity:1 },
+    sakura: { titlebarActive1:"#ff69b4", titlebarActive2:"#ffb6c1", chatBg:"#fff0f5", chatText:"#4a235a", userText:"#ff69b4", highlightBg:"#ff69b4", highlightText:"#ffffff", highlightUser:"#ffd700", systemBg:"#fce4ec", systemText:"#880e4f", fontFamily:'"Comic Sans MS", cursive, sans-serif', winRadius:12, winOpacity:1 },
+    frutigeraqua: { titlebarActive1:"#21B7F4", titlebarActive2:"#078BD4", chatBg:"#B8FBFF", chatText:"#002840", userText:"#0055AA", highlightBg:"#23DF79", highlightText:"#FFFFFF", highlightUser:"#E65100", systemBg:"#C6FFE3", systemText:"#1B5E20", fontFamily:'"Comic Sans MS", "Comic Sans", cursive, sans-serif', winRadius:22, winOpacity:0.88 }
+  };
+
+  function applyTheme(name){
+    var t = THEMES[name]; if(!t) return;
+    custom.theme = name;
+    // map theme keys to custom keys
+    if (!custom.themeColors) custom.themeColors = {};
+    var overrides = custom.themeColors[name] || {};
+    var THEME_KEYS = ["titlebarActive1","titlebarActive2","chatBg","chatText","userText","highlightBg","highlightText","highlightUser","systemBg","systemText","fontFamily","winRadius","winOpacity"];
+    THEME_KEYS.forEach(function(k){
+      if (overrides && overrides[k] !== undefined) { custom[k] = overrides[k]; }
+      else if (t[k] !== undefined) { custom[k] = t[k]; }
+    });
+    saveCustom(); fillPanel(); applyCustom();
+    updateThemeColorLabel();
+  }
+
+  function clamp(n, min, max) {
+    if (!isFinite(n)) return min;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function loadSettings() {
+    var stored = {};
+    try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; } catch(e){ stored = {}; }
+    var s = {};
+    for (var k in DEFAULTS) if (Object.prototype.hasOwnProperty.call(DEFAULTS,k)) s[k] = DEFAULTS[k];
+    for (var k2 in stored) if (Object.prototype.hasOwnProperty.call(s,k2)) s[k2] = stored[k2];
+    s.limit = clamp(parseInt(s.limit,10), 5, 100);
+    s.fontSize = clamp(parseInt(s.fontSize,10), 10, 22);
+    s.showBadges = !!s.showBadges;
+    s.showEmotes = !!s.showEmotes;
+    s.channel = String(s.channel||"").toLowerCase().replace(/^#/,"").trim();
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has("channel")) s.channel = String(params.get("channel")||"").toLowerCase().replace(/^#/,"").trim();
+    } catch(e){}
+    return s;
+  }
+
+  function loadCustom() {
+    var stored = {};
+    try { stored = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "{}") || {}; } catch(e){ stored = {}; }
+    var c = {};
+    for (var k in CUSTOM_DEFAULTS) if (Object.prototype.hasOwnProperty.call(CUSTOM_DEFAULTS,k)) c[k] = CUSTOM_DEFAULTS[k];
+    for (var k2 in stored) if (Object.prototype.hasOwnProperty.call(c,k2)) c[k2] = stored[k2];
+    if (!c.themeColors || typeof c.themeColors !== "object") c.themeColors = {};
+    c.winWidth = clamp(parseInt(c.winWidth,10), 280, 900);
+    c.winHeight = clamp(parseInt(c.winHeight,10), 400, 900);
+    c.winOpacity = clamp(parseFloat(c.winOpacity), 0.4, 1);
+    c.winRadius = clamp(parseInt(c.winRadius,10), 0, 12);
+    c.fontSize = clamp(parseInt(c.fontSize,10), 10, 22);
+    c.lineHeight = clamp(parseFloat(c.lineHeight), 1.0, 2.0);
+    c.padY = clamp(parseInt(c.padY,10), 0, 6);
+    c.padX = clamp(parseInt(c.padX,10), 2, 12);
+    c.msgGap = clamp(parseInt(c.msgGap,10), 0, 6);
+    c.badgeGap = clamp(parseInt(c.badgeGap,10), 0, 4);
+    c.emoteGap = clamp(parseInt(c.emoteGap,10), 0, 4);
+    c.limit = clamp(parseInt(c.limit,10), 5, 100);
+    return c;
+  }
+
+  function saveSettings() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch(e){} }
+  function saveCustom() { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)); } catch(e){} }
+
+  var settings = loadSettings();
+  var custom = loadCustom();
+
+  var root = document.documentElement;
+  var chatEl = document.getElementById("chat");
+  var statusText = document.getElementById("statusText");
+  var statusDot = document.getElementById("statusDot");
+  var countText = document.getElementById("countText");
+  var windowTitle = document.getElementById("windowTitle");
+  var statusbar = document.querySelector(".statusbar");
+
+  var customPanel = document.getElementById("customPanel");
+  var btnPanelToggle = document.getElementById("btnPanelToggle");
+  var btnPanelClose = document.getElementById("btnPanelClose");
+  var appEl = document.getElementById("app");
+
+  var setupModal = document.getElementById("setupModal");
+  var helpModal = document.getElementById("helpModal");
+  var setupError = document.getElementById("setupError");
+  var inputChannel = document.getElementById("inputChannel");
+  var inputLimit = document.getElementById("inputLimit");
+  var inputFont = document.getElementById("inputFont");
+  var checkBadges = document.getElementById("checkBadges");
+  var checkEmotes = document.getElementById("checkEmotes");
+
+  var ws=null, reconnectTimer=null, currentChannel="", roomId=null;
+  var badgeUrls=new Map(), emoteMap=new Map(), emotesLoadedFor=null;
+  var seenEmotes=new Set();
+  var demoTimers=[], demoRunning=false;
+
+  var FALLBACK_BADGES = {
+    "broadcaster/1":"https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1",
+    "moderator/1":"https://static-cdn.jtvnw.net/badges/v1/3267646d-33f0-4b17-b3df-f923a41db1d0/1",
+    "vip/1":"https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfa6ec/1",
+    "premium/1":"https://static-cdn.jtvnw.net/badges/v1/bbbe0db0-a598-423e-86d0-f9fb98ca1933/1",
+    "partner/1":"https://static-cdn.jtvnw.net/badges/v1/d12a2e27-16f6-41d0-ab77-b780518f00a3/1",
+    "turbo/1":"https://static-cdn.jtvnw.net/badges/v1/33d9cd7a-a8fd-4488-af05-81475862d004/1"
+  };
+
+  function applyCustom() {
+    root.style.setProperty("--win-width", custom.winWidth + "px");
+    root.style.setProperty("--win-height", custom.winHeight + "px");
+    root.style.setProperty("--win-opacity", custom.winOpacity);
+    root.style.setProperty("--win-radius", custom.winRadius + "px");
+    root.style.setProperty("--titlebar-active-1", custom.titlebarActive1);
+    root.style.setProperty("--titlebar-active-2", custom.titlebarActive2);
+    root.style.setProperty("--chat-bg", custom.chatBg);
+    root.style.setProperty("--chat-text", custom.chatText);
+    root.style.setProperty("--user-text", custom.userText);
+    root.style.setProperty("--highlight-bg", custom.highlightBg);
+    root.style.setProperty("--highlight-text", custom.highlightText);
+    root.style.setProperty("--highlight-user", custom.highlightUser);
+    root.style.setProperty("--system-bg", custom.systemBg);
+    root.style.setProperty("--system-text", custom.systemText);
+    root.style.setProperty("--font-family", custom.fontFamily);
+    root.style.setProperty("--font-size", custom.fontSize + "px");
+    root.style.setProperty("--line-height", custom.lineHeight);
+    root.style.setProperty("--msg-padding-y", custom.padY + "px");
+    root.style.setProperty("--msg-padding-x", custom.padX + "px");
+    root.style.setProperty("--msg-gap", custom.msgGap + "px");
+    root.style.setProperty("--badge-gap", custom.badgeGap + "px");
+    root.style.setProperty("--emote-gap", custom.emoteGap + "px");
+     root.style.setProperty("--big-emote-extra", (custom.bigEmoteExtra || 36) + "px");
+     root.style.setProperty("--text-align", custom.textAlign || "left");
+    root.style.setProperty("--show-animations", custom.animation);
+    root.style.setProperty("--show-badges", custom.showBadges ? "inline-block" : "none");
+    root.style.setProperty("--show-emotes", custom.showEmotes ? "inline-block" : "none");
+    statusbar.style.display = custom.showStatus ? "flex" : "none";
+    document.getElementById("countPanel").style.display = custom.showCount ? "flex" : "none";
+     if (appEl) appEl.setAttribute("data-theme", custom.theme || "win98");
+    if (custom.autoScroll) root.style.setProperty("--scroll-auto", "auto"); else root.style.setProperty("--scroll-auto", "scroll");
+    settings.limit = custom.limit;
+    settings.showBadges = custom.showBadges;
+    settings.showEmotes = custom.showEmotes;
+    // salvar ajustes de cor/estilo no tema atual
+    if (!custom.themeColors) custom.themeColors = {};
+    if (!custom.themeColors[custom.theme]) custom.themeColors[custom.theme] = {};
+    var tk = ["titlebarActive1","titlebarActive2","chatBg","chatText","userText","highlightBg","highlightText","highlightUser","systemBg","systemText","fontFamily","winRadius","winOpacity"];
+    tk.forEach(function(k){ custom.themeColors[custom.theme][k] = custom[k]; });
+    saveCustom();
+    saveSettings();
+    trimMessages();
+    updateCount();
+    updateBubbles();
+  }
+
+  function updateBubbles() {
+    var layer = document.getElementById("bubblesLayer");
+    if (!layer) return;
+    layer.innerHTML = "";
+    if (custom.theme !== "frutigeraqua") return;
+    var n = 20;
+    var w = layer.clientWidth || 400;
+    var h = layer.clientHeight || 600;
+    for (var i = 0; i < n; i++) {
+      var b = document.createElement("span");
+      b.className = "bubble";
+      var size = 10 + Math.random() * 38;
+      b.style.width = size + "px";
+      b.style.height = size + "px";
+      b.style.left = (Math.random() * Math.max(1, w - size)) + "px";
+      b.style.top = (h * 0.15 + Math.random() * h * 0.85) + "px";
+      b.style.animationDuration = (5 + Math.random() * 7) + "s";
+      b.style.animationDelay = (Math.random() * 6) + "s";
+      layer.appendChild(b);
+    }
+  }
+
+  function updateThemeColorLabel() {
+    var el = document.getElementById("themeColorLabel");
+    if (!el) return;
+    var name = custom.theme || "win98";
+    var t = THEMES[name];
+    var label = name;
+    // find option text
+    var sel = document.getElementById("pTheme");
+    if (sel) {
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === name) { label = sel.options[i].text; break; }
+      }
+    }
+    el.textContent = "Cores salvas por tema. Tema atual: " + label + ". Alterar uma cor salva apenas neste tema.";
+  }
+
+  function fillPanel() {
+    document.getElementById("pLimit").value = custom.limit;
+    document.getElementById("pAutoScroll").checked = custom.autoScroll;
+    document.getElementById("pAnim").value = custom.animation;
+    document.getElementById("pTitle1").value = custom.titlebarActive1;
+    document.getElementById("pTitle2").value = custom.titlebarActive2;
+    document.getElementById("pChatBg").value = custom.chatBg;
+    document.getElementById("pChatText").value = custom.chatText;
+    document.getElementById("pUserText").value = custom.userText === "inherit" ? "#000000" : custom.userText;
+    document.getElementById("pHighBg").value = custom.highlightBg;
+    document.getElementById("pHighText").value = custom.highlightText;
+    document.getElementById("pHighUser").value = custom.highlightUser;
+    document.getElementById("pSysBg").value = custom.systemBg;
+    document.getElementById("pSysText").value = custom.systemText;
+    document.getElementById("pFontFamily").value = custom.fontFamily;
+    document.getElementById("pFontSize").value = custom.fontSize;
+    document.getElementById("pLineHeight").value = custom.lineHeight;
+    document.getElementById("pPadY").value = custom.padY;
+    document.getElementById("pPadX").value = custom.padX;
+    document.getElementById("pMsgGap").value = custom.msgGap;
+    document.getElementById("pBadgeGap").value = custom.badgeGap;
+    document.getElementById("pEmoteGap").value = custom.emoteGap;
+     document.getElementById("pTextAlign").value = custom.textAlign || "left";
+     document.getElementById("pTheme").value = custom.theme || "win98";
+     document.getElementById("pBigEmoteExtra").value = custom.bigEmoteExtra || 36;
+    document.getElementById("pWidth").value = custom.winWidth;
+    document.getElementById("pHeight").value = custom.winHeight;
+    document.getElementById("pOpacity").value = Math.round(custom.winOpacity * 100);
+    document.getElementById("pOpacityVal").textContent = Math.round(custom.winOpacity * 100);
+    document.getElementById("pRadius").value = custom.winRadius;
+    document.getElementById("pShowBadges").checked = custom.showBadges;
+    document.getElementById("pShowEmotes").checked = custom.showEmotes;
+    document.getElementById("pShowHighlight").checked = custom.showHighlight;
+    document.getElementById("pShowStatus").checked = custom.showStatus;
+    document.getElementById("pShowCount").checked = custom.showCount;
+    document.getElementById("pShowConfetti").checked = custom.showConfetti !== false;
+  }
+
+  function togglePanel(force) {
+    var open = force !== undefined ? force : !customPanel.classList.contains("open");
+    if (open) {
+      customPanel.classList.add("open");
+      btnPanelToggle.classList.add("active");
+      appEl.classList.add("panel-open");
+    } else {
+      customPanel.classList.remove("open");
+      btnPanelToggle.classList.remove("active");
+      appEl.classList.remove("panel-open");
+    }
+  }
+
+  function bindPanel() {
+    btnPanelToggle.addEventListener("click", function(){ togglePanel(); });
+    btnPanelClose.addEventListener("click", function(){ togglePanel(false); });
+    document.getElementById("menuView").addEventListener("click", function(){ togglePanel(true); });
+
+    var tabs = document.querySelectorAll(".ptab");
+    tabs.forEach(function(tab){
+      tab.addEventListener("click", function(){
+        tabs.forEach(function(t){ t.classList.remove("active"); });
+        tab.classList.add("active");
+        document.querySelectorAll(".tab-content").forEach(function(c){ c.classList.remove("active"); });
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+    document.getElementById("pLimit").addEventListener("input", function(){ custom.limit = clamp(parseInt(this.value,10),5,100); applyCustom(); });
+    document.getElementById("pAutoScroll").addEventListener("change", function(){ custom.autoScroll = this.checked; applyCustom(); });
+    document.getElementById("pAnim").addEventListener("change", function(){ custom.animation = this.value; applyCustom(); });
+    document.getElementById("pTitle1").addEventListener("input", function(){ custom.titlebarActive1 = this.value; applyCustom(); });
+    document.getElementById("pTitle2").addEventListener("input", function(){ custom.titlebarActive2 = this.value; applyCustom(); });
+    document.getElementById("pChatBg").addEventListener("input", function(){ custom.chatBg = this.value; applyCustom(); });
+    document.getElementById("pChatText").addEventListener("input", function(){ custom.chatText = this.value; applyCustom(); });
+    document.getElementById("pUserText").addEventListener("input", function(){ custom.userText = this.value; applyCustom(); });
+    document.getElementById("pHighBg").addEventListener("input", function(){ custom.highlightBg = this.value; applyCustom(); });
+    document.getElementById("pHighText").addEventListener("input", function(){ custom.highlightText = this.value; applyCustom(); });
+    document.getElementById("pHighUser").addEventListener("input", function(){ custom.highlightUser = this.value; applyCustom(); });
+    document.getElementById("pSysBg").addEventListener("input", function(){ custom.systemBg = this.value; applyCustom(); });
+    document.getElementById("pSysText").addEventListener("input", function(){ custom.systemText = this.value; applyCustom(); });
+    document.getElementById("pFontFamily").addEventListener("change", function(){ custom.fontFamily = this.value; applyCustom(); });
+    document.getElementById("pFontSize").addEventListener("input", function(){ custom.fontSize = clamp(parseInt(this.value,10),10,22); applyCustom(); fillPanel(); });
+    document.getElementById("pLineHeight").addEventListener("input", function(){ custom.lineHeight = clamp(parseFloat(this.value),1.0,2.0); applyCustom(); });
+    document.getElementById("pPadY").addEventListener("input", function(){ custom.padY = clamp(parseInt(this.value,10),0,6); applyCustom(); });
+    document.getElementById("pPadX").addEventListener("input", function(){ custom.padX = clamp(parseInt(this.value,10),2,12); applyCustom(); });
+    document.getElementById("pMsgGap").addEventListener("input", function(){ custom.msgGap = clamp(parseInt(this.value,10),0,6); applyCustom(); });
+    document.getElementById("pBadgeGap").addEventListener("input", function(){ custom.badgeGap = clamp(parseInt(this.value,10),0,4); applyCustom(); });
+    document.getElementById("pEmoteGap").addEventListener("input", function(){ custom.emoteGap = clamp(parseInt(this.value,10),0,4); applyCustom(); });
+     document.getElementById("pTextAlign").addEventListener("change", function(){ custom.textAlign = this.value; applyCustom(); });
+     document.getElementById("pTheme").addEventListener("change", function(){ applyTheme(this.value); });
+     document.getElementById("pBigEmoteExtra").addEventListener("input", function(){ custom.bigEmoteExtra = clamp(parseInt(this.value,10),10,80); applyCustom(); fillPanel(); });
+    document.getElementById("pWidth").addEventListener("input", function(){ custom.winWidth = clamp(parseInt(this.value,10),280,900); applyCustom(); });
+    document.getElementById("pHeight").addEventListener("input", function(){ custom.winHeight = clamp(parseInt(this.value,10),400,900); applyCustom(); });
+    document.getElementById("pOpacity").addEventListener("input", function(){ custom.winOpacity = clamp(parseInt(this.value,10)/100,0.4,1); document.getElementById("pOpacityVal").textContent = this.value; applyCustom(); });
+    document.getElementById("pRadius").addEventListener("input", function(){ custom.winRadius = clamp(parseInt(this.value,10),0,12); applyCustom(); });
+    document.getElementById("pShowBadges").addEventListener("change", function(){ custom.showBadges = this.checked; applyCustom(); });
+    document.getElementById("pShowEmotes").addEventListener("change", function(){ custom.showEmotes = this.checked; applyCustom(); });
+    document.getElementById("pShowHighlight").addEventListener("change", function(){ custom.showHighlight = this.checked; applyCustom(); });
+    document.getElementById("pShowStatus").addEventListener("change", function(){ custom.showStatus = this.checked; applyCustom(); });
+    document.getElementById("pShowCount").addEventListener("change", function(){ custom.showCount = this.checked; applyCustom(); });
+    document.getElementById("pShowConfetti").addEventListener("change", function(){ custom.showConfetti = this.checked; applyCustom(); });
+    document.getElementById("btnReset").addEventListener("click", function(){
+      custom = JSON.parse(JSON.stringify(CUSTOM_DEFAULTS));
+      saveCustom();
+      fillPanel();
+      applyCustom();
+    });
+    var btnRTC = document.getElementById("btnResetThemeColors");
+    if (btnRTC) btnRTC.addEventListener("click", function(){
+      if (!custom.themeColors) custom.themeColors = {};
+      delete custom.themeColors[custom.theme];
+      // reaplicar tema base
+      applyTheme(custom.theme);
+    });
+  }
+
+  function applySettings() {
+    windowTitle.textContent = settings.channel ? "Chat da Twitch — #" + settings.channel : "Chat da Twitch";
+    updateCount();
+    trimMessages();
+  }
+
+  function updateCount(){ var n = chatEl.children.length; countText.textContent = n + (n===1?" msg":" msgs"); }
+  function trimMessages(){ while (chatEl.children.length > settings.limit){ chatEl.removeChild(chatEl.firstElementChild); } updateCount(); }
+
+  function addMessage(message){
+    var atBottom = custom.autoScroll && (chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight < 80);
+    var row = document.createElement("div");
+    row.className = "row" + (message.highlight && custom.showHighlight ? " highlight" : "") + (message.system ? " system" : "");
+    if (message.system){
+      var prefix = document.createElement("span");
+      prefix.className = "sys-prefix";
+      prefix.textContent = "[sistema] ";
+      row.appendChild(prefix);
+    } else {
+      if (custom.showBadges && message.badges && message.badges.length){
+        message.badges.forEach(function(key){
+          var url = badgeUrls.get(key) || FALLBACK_BADGES[key];
+          if (!url) return;
+          var img = document.createElement("img");
+          img.className = "badge";
+          img.src = url;
+          img.alt = key;
+          img.loading = "lazy";
+          img.addEventListener("error", function(){ this.remove(); });
+          row.appendChild(img);
+        });
+      }
+      var user = document.createElement("span");
+      user.className = "user";
+      user.textContent = message.name || "anônimo";
+      if (message.color) user.style.color = message.color;
+      row.appendChild(user);
+      var sep = document.createElement("span");
+      sep.className = "sep";
+      sep.textContent = ": ";
+      row.appendChild(sep);
+    }
+    var text = document.createElement("span");
+    text.className = "msg-text";
+    var emoteOnlyMsg = isEmoteOnlyMessage(message.text, message.emotes);
+    renderText(text, message.text, message.emotes, emoteOnlyMsg);
+    if (emoteOnlyMsg) text.classList.add("big-emote");
+    row.appendChild(text);
+    chatEl.appendChild(row);
+    trimMessages();
+    if (atBottom || message.forceScroll){ chatEl.scrollTop = chatEl.scrollHeight; }
+    // Efeito de confete em mensagens destacadas
+    if (message.highlight && custom.showConfetti !== false && typeof confetti === "function") {
+      try {
+        confetti({ particleCount: 70, spread: 80, origin: { y: 0.65 }, disableForReducedMotion: true });
+      } catch (e) {}
+    }
+  }
+
+  function cleanInvisible(t){ return String(t||"").replace(/[\u034F\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g, ""); }
+  function isEmoteOnlyMessage(text, emotesTag){
+    if (!custom.showEmotes) return false;
+    text = cleanInvisible(text);
+    var ranges = parseEmoteRanges(emotesTag);
+    var chars = Array.from(String(text||""));
+    var removed = [];
+    for (var i=0;i<chars.length;i++) removed[i] = false;
+    ranges.forEach(function(r){ for (var i=r.start;i<=r.end && i<chars.length;i++) removed[i]=true; });
+    var rest = "";
+    for (var i=0;i<chars.length;i++){ if (!removed[i]) rest += chars[i]; }
+    var toks = rest.split(/(\s+)/);
+    var hasEmote = ranges.length > 0;
+    for (var i=0;i<toks.length;i++){
+      var t = toks[i];
+      if (!t || /^\s+$/.test(t)) continue;
+      if (!emoteMap.has(t)) return false;
+      hasEmote = true;
+    }
+    return hasEmote;
+  }
+  function renderText(container, text, emotesTag, big){
+    text = cleanInvisible(text);
+    var ranges = custom.showEmotes ? parseEmoteRanges(emotesTag) : [];
+    var chars = Array.from(String(text||""));
+    if (!ranges.length){ appendThirdPartyText(container, chars.join(""), !!big); finalizeBigEmote(container, !!big); return; }
+    var i=0;
+    while(i<chars.length){
+      var current=null;
+      for (var r=0;r<ranges.length;r++){ if(ranges[r].start===i){ current=ranges[r]; break; } }
+      if (current){
+        var label = chars.slice(current.start, current.end+1).join("");
+        container.appendChild(makeEmote("https://static-cdn.jtvnw.net/emoticons/v2/"+encodeURIComponent(current.id)+"/default/light/1.0", label, !!big));
+        i = current.end+1; continue;
+      }
+      var nextStart=chars.length;
+      for (var n=0;n<ranges.length;n++){ if(ranges[n].start>i){ nextStart=ranges[n].start; break; } }
+      appendThirdPartyText(container, chars.slice(i,nextStart).join(""), !!big);
+      i=nextStart;
+    }
+    finalizeBigEmote(container, !!big);
+  }
+  function finalizeBigEmote(container, big){
+    if (!custom.showEmotes) return;
+    var hasEmote = false;
+    var onlyEmotes = true;
+    for (var c=0; c<container.childNodes.length; c++){
+      var n = container.childNodes[c];
+      if (n.nodeType === 3){ // text
+        if (/\S/.test(n.nodeValue||"")) onlyEmotes = false;
+      } else if (n.nodeType === 1 && n.classList && n.classList.contains("emote")) {
+        hasEmote = true;
+      } else {
+        onlyEmotes = false;
+      }
+    }
+    var isBig = !!big || (hasEmote && onlyEmotes);
+    if (isBig && hasEmote){
+      container.classList.add("big-emote");
+      var h = (custom.fontSize + (custom.bigEmoteExtra || 36)) + "px";
+      for (var c2=0; c2<container.childNodes.length; c2++){
+        var n2 = container.childNodes[c2];
+        if (n2.nodeType === 1 && n2.classList && n2.classList.contains("emote")){
+          n2.style.setProperty("height", h, "important");
+          n2.classList.add("big");
+        }
+      }
+    }
+  }
+
+  function appendThirdPartyText(container, text, big){
+    text = cleanInvisible(text);
+    if (!text) return;
+    var parts = text.split(/(\s+)/);
+    for (var i=0;i<parts.length;i++){
+      var part = parts[i];
+      if (!part) continue;
+      if (/^\s+$/.test(part)){ container.appendChild(document.createTextNode(part)); continue; }
+      if (custom.showEmotes && emoteMap.has(part)){ container.appendChild(makeEmote(emoteMap.get(part), part, !!big)); continue; }
+      container.appendChild(document.createTextNode(part));
+    }
+  }
+
+  function makeEmote(url,label,big){
+    if (label) seenEmotes.add(String(label));
+    var img = document.createElement("img");
+    img.className="emote";
+    img.src=url; img.alt=label||""; img.title=label||"";
+    if (big){
+      img.classList.add("big");
+      var h = (custom.fontSize + (custom.bigEmoteExtra || 36)) + "px";
+      img.style.setProperty("height", h, "important");
+    }
+    img.addEventListener("error", function(){ img.remove(); });
+    return img;
+  }
+
+  function parseEmoteRanges(value){
+    if(!value) return [];
+    var ranges=[];
+    String(value).split("/").forEach(function(group){
+      var colon=group.indexOf(":");
+      if(colon===-1)return;
+      var id=group.slice(0,colon);
+      group.slice(colon+1).split(",").forEach(function(pos){
+        var b=pos.split("-");
+        if(b.length!==2)return;
+        var s=parseInt(b[0],10), e=parseInt(b[1],10);
+        if(isFinite(s)&&isFinite(e)&&e>=s) ranges.push({id:id,start:s,end:e});
+      });
+    });
+    ranges.sort(function(a,b){return a.start-b.start;});
+    return ranges;
+  }
+
+  function parseBadgeList(v){ if(!v)return[]; return String(v).split(",").filter(Boolean); }
+  function colorFor(name){ var p=["#ff0000","#0000ff","#00ff00","#b22222","#ff7f50","#9acd32","#ff4500","#2e8b57","#daa520","#d2691e","#5f9ea0","#1e90ff","#8a2be2","#008000","#00008b"]; var h=0; for(var i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))%1000000007; return p[h%p.length]; }
+
+  function connect(channel){
+    channel = String(channel||"").toLowerCase().replace(/^#/,"").trim();
+    if(!channel){ openSetup(); return; }
+    stopDemo(); disconnect();
+    emoteMap=new Map(); emotesLoadedFor=null; roomId=null; chatEl.textContent="";
+    settings.channel=channel; saveSettings(); applySettings();
+    currentChannel=channel;
+    setStatus("Conectando a #"+channel+"…","connecting");
+    try { ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443"); } catch(e){ setStatus("Não foi possível conectar","offline"); return; }
+    ws.onopen=function(){
+      ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership");
+      ws.send("PASS SCHMOOPIIE");
+      ws.send("NICK justinfan"+Math.floor(10000+Math.random()*80000));
+      ws.send("JOIN #"+channel);
+      setStatus("Conectado a #"+channel,"online");
+    };
+    ws.onmessage=function(ev){
+      String(ev.data||"").split("\r\n").forEach(function(line){ if(line) handleLine(line); });
+    };
+    ws.onclose=function(){
+      ws=null;
+      if(currentChannel!==channel)return;
+      setStatus("Conexão perdida — reconectando…","offline");
+      clearTimeout(reconnectTimer);
+      reconnectTimer=setTimeout(function(){ if(settings.channel===channel) connect(channel); },4000);
+    };
+  }
+  function disconnect(){
+    clearTimeout(reconnectTimer); reconnectTimer=null;
+    if(ws){ try{ws.close();}catch(e){} ws=null; }
+  }
+  function setStatus(t,s){ statusText.textContent=t; statusDot.className="dot "+(s||"offline"); }
+
+  function handleLine(raw){
+    var m = parseIRC(raw); if(!m) return;
+    if(m.command==="PING"){ if(ws&&ws.readyState===1) ws.send("PONG :"+(m.trailing||"tmi.twitch.tv")); return; }
+    if(m.command==="PRIVMSG"){ onPrivmsg(m); return; }
+    if(m.command==="USERNOTICE"){ onUsernotice(m); return; }
+    if(m.command==="ROOMSTATE"){ syncRoom(m.tags); return; }
+    if(m.command==="RECONNECT"){ if(ws) ws.close(); return; }
+  }
+  function parseIRC(raw){
+    var rest=raw, msg={tags:{},prefix:"",command:"",params:[],trailing:""};
+    if(rest[0]==="@"){ var i=rest.indexOf(" "); if(i===-1)return null; var tags=rest.slice(1,i).split(";"); rest=rest.slice(i+1); tags.forEach(function(p){ if(!p)return; var eq=p.indexOf("="); if(eq===-1) msg.tags[p]=""; else msg.tags[p.slice(0,eq)]=p.slice(eq+1).replace(/\\([sn:r\\])/g,function(a,c){return c==="s"?" ":c==="n"?"\n":c==="r"?"\r":c===":"?";":c==="\\"?"\\":a;}); }); }
+    if(rest[0]===":"){ var i2=rest.indexOf(" "); if(i2===-1)return null; msg.prefix=rest.slice(1,i2); rest=rest.slice(i2+1); }
+    var i3=rest.indexOf(" "); if(i3===-1){ msg.command=rest; return msg; }
+    msg.command=rest.slice(0,i3); rest=rest.slice(i3+1);
+    var ti=rest.indexOf(" :"); if(ti!==-1){ msg.trailing=rest.slice(ti+2); rest=rest.slice(0,ti); }
+    if(rest) msg.params=rest.split(" ").filter(Boolean);
+    return msg;
+  }
+
+  function syncRoom(tags){ var id=tags&&tags["room-id"]; if(id&&id!==roomId){ roomId=id; loadBadges(id); loadThirdPartyEmotes(id); } }
+  function onPrivmsg(m){ var tags=m.tags||{}; syncRoom(tags); var text=m.trailing; if(!text)return; var name=tags["display-name"]||(m.prefix||"").split("!")[0]||"anônimo"; addMessage({name:name,color:tags.color||colorFor(name),badges:parseBadgeList(tags.badges),text:text,emotes:tags.emotes,highlight:(tags["msg-id"]==="highlighted-message"||tags["msg-id"]==="announcement")}); }
+  function onUsernotice(m){ var tags=m.tags||{}; syncRoom(tags); var summary=tags["system-msg"]; if(!summary)return; addMessage({text:summary,system:true}); }
+
+  function addBadgeSets(t,d){ if(!d||!d.badge_sets)return; var sets=d.badge_sets; for(var sid in sets){ if(!Object.prototype.hasOwnProperty.call(sets,sid))continue; var v=sets[sid].versions||{}; for(var ver in v){ if(!Object.prototype.hasOwnProperty.call(v,ver))continue; var img=v[ver]; var url=img.image_url_1x||img.image_url_2x; if(url) t.set(sid+"/"+ver,url); } } }
+  function loadBadges(id){ var next=new Map(); fetch("https://badges.twitch.tv/v1/badges/global/display?language=en").then(function(r){return r.ok?r.json():null;}).then(function(d){addBadgeSets(next,d);}).catch(function(){}); fetch("https://badges.twitch.tv/v1/badges/channels/"+encodeURIComponent(id)+"/display?language=en").then(function(r){return r.ok?r.json():null;}).then(function(d){addBadgeSets(next,d);}).catch(function(){}); setTimeout(function(){ for(var k in FALLBACK_BADGES){ if(!Object.prototype.hasOwnProperty.call(FALLBACK_BADGES,k))continue; if(!next.has(k)) next.set(k,FALLBACK_BADGES[k]); } badgeUrls=next; },900); }
+  function loadThirdPartyEmotes(id){ if(!id||emotesLoadedFor===id)return; emotesLoadedFor=id; var map=new Map(); function add(n,u){ if(n&&u&&!map.has(n)) map.set(n,u); } function g7(d){ (d&&d.emotes||[]).forEach(function(e){ var h=e.data&&e.data.host; if(h&&h.url){ var b=h.url.indexOf("//")===0?"https:"+h.url:h.url; add(e.name,b.replace(/\/$/,"")+"/1x.webp"); } }); } fetch("https://7tv.io/v3/emote-sets/global").then(function(r){return r.ok?r.json():null;}).then(g7).catch(function(){}); fetch("https://7tv.io/v3/users/twitch/"+encodeURIComponent(id)).then(function(r){return r.ok?r.json():null;}).then(function(d){ if(d&&d.emote_set) g7(d.emote_set); }).catch(function(){}); fetch("https://api.betterttv.net/3/cached/emotes/global").then(function(r){return r.ok?r.json():null;}).then(function(a){ Array.isArray(a)&&a.forEach(function(e){ add(e.code,"https://cdn.betterttv.net/emote/"+e.id+"/1x"); }); }).catch(function(){}); fetch("https://api.betterttv.net/3/cached/users/twitch/"+encodeURIComponent(id)).then(function(r){return r.ok?r.json():null;}).then(function(d){ if(!d)return; (d.channelEmotes||[]).forEach(function(e){ add(e.code,"https://cdn.betterttv.net/emote/"+e.id+"/1x"); }); (d.sharedEmotes||[]).forEach(function(e){ add(e.code,"https://cdn.betterttv.net/emote/"+e.id+"/1x"); }); }).catch(function(){}); fetch("https://api.frankerfacez.com/v1/set/global").then(function(r){return r.ok?r.json():null;}).then(function(d){ var sets=d&&d.sets||{}; for(var sid in sets){ (sets[sid].emoticons||[]).forEach(function(e){ var u=e.urls||{}; add(e.name,u["1"]||u["2"]||u["4"]); }); } }).catch(function(){}); fetch("https://api.frankerfacez.com/v1/room/id/"+encodeURIComponent(id)).then(function(r){return r.ok?r.json():null;}).then(function(d){ var sets=d&&d.sets||{}; for(var sid in sets){ (sets[sid].emoticons||[]).forEach(function(e){ var u=e.urls||{}; add(e.name,u["1"]||u["2"]||u["4"]); }); } }).catch(function(){}); setTimeout(function(){ emoteMap=map; },1200); }
+
+  function openModal(m){ m.hidden=false; document.body.classList.add("modal-open"); var f=m.querySelector("input,button"); if(f) f.focus(); }
+  function closeModal(m){ m.hidden=true; if(setupModal.hidden&&helpModal.hidden) document.body.classList.remove("modal-open"); }
+  function openSetup(){ fillSetup(); openModal(setupModal); inputChannel.focus(); inputChannel.select(); }
+  function fillSetup(){ inputChannel.value=settings.channel||""; document.getElementById("inputLimit2").value=custom.limit; document.getElementById("inputFont2").value=custom.fontSize; document.getElementById("checkBadges").checked=custom.showBadges; document.getElementById("checkEmotes").checked=custom.showEmotes; setupError.hidden=true; }
+  function tryConnectFromForm(){
+    settings.channel=inputChannel.value.toLowerCase().replace(/^#/,"").trim();
+    custom.limit=clamp(parseInt(document.getElementById("inputLimit2").value,10),5,100);
+    custom.fontSize=clamp(parseInt(document.getElementById("inputFont2").value,10),10,22);
+    custom.showBadges=document.getElementById("checkBadges").checked;
+    custom.showEmotes=document.getElementById("checkEmotes").checked;
+    saveSettings(); saveCustom(); fillPanel(); applyCustom(); applySettings();
+    if(!/^[a-zA-Z0-9_]{2,30}$/.test(settings.channel)){ setupError.textContent="Nome de canal inválido. Use apenas letras, números e _ (2 a 30 caracteres)."; setupError.hidden=false; return; }
+    closeModal(setupModal); connect(settings.channel);
+  }
+
+  function stopDemo(){ demoRunning=false; demoTimers.forEach(clearTimeout); demoTimers=[]; }
+  function runDemo(){
+    stopDemo(); disconnect(); currentChannel=""; chatEl.textContent="";
+    setStatus("Prévia — modo demonstração","connecting");
+    var demo=[
+      {name:"StreamerBR",color:"#ff4500",badges:["broadcaster/1"],text:"Bem-vindos à live! Kappa",emotes:"25:17-21"},
+      {name:"ModeradoraAna",badges:["moderator/1"],text:"Lembrando: sem spam no chat, por favor :)"},
+      {name:"SubDoZe",badges:["subscriber/12"],text:"Passando pra dar um oi! Esse overlay ficou incrível"},
+      {name:"Viewer_99",text:"primeira vez aqui, curtindo muito a live"},
+      {name:"Sortudo",badges:["vip/1"],text:"MENSAGEM DESTACADA COM OS PONTOS DO CANAL!",highlight:true},
+      {name:"Twitch",text:"Sortudo resgatou \"Destacar minha mensagem\" usando 500 pontos do canal.",system:true}
+    ];
+    demo.forEach(function(m,i){
+      var t=setTimeout(function(){ addMessage({name:m.name,color:m.color||colorFor(m.name),badges:m.badges||[],text:m.text,emotes:m.emotes,highlight:!!m.highlight,system:!!m.system,forceScroll:true}); },350+i*650);
+      demoTimers.push(t);
+    });
+  }
+
+  function bindEvents(){
+    document.getElementById("menuSetup").addEventListener("click", openSetup);
+    document.getElementById("menuChannel").addEventListener("click", openSetup);
+    document.getElementById("menuHelp").addEventListener("click", function(){ openModal(helpModal); });
+    document.getElementById("btnClose").addEventListener("click", openSetup);
+    document.getElementById("btnMin").addEventListener("click", function(){});
+    document.getElementById("btnMax").addEventListener("click", function(){});
+    document.getElementById("btnSetupClose").addEventListener("click", function(){ closeModal(setupModal); });
+    document.getElementById("btnCancel").addEventListener("click", function(){ closeModal(setupModal); });
+    document.getElementById("btnConnect").addEventListener("click", tryConnectFromForm);
+    inputChannel.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); tryConnectFromForm(); } });
+    document.getElementById("btnPreview").addEventListener("click", function(){
+      settings.channel=inputChannel.value.toLowerCase().replace(/^#/,"").trim();
+      custom.limit=clamp(parseInt(document.getElementById("inputLimit2").value,10),5,100);
+      custom.fontSize=clamp(parseInt(document.getElementById("inputFont2").value,10),10,22);
+      custom.showBadges=document.getElementById("checkBadges").checked;
+      custom.showEmotes=document.getElementById("checkEmotes").checked;
+      saveSettings(); saveCustom(); fillPanel(); applyCustom(); applySettings(); closeModal(setupModal); runDemo();
+    });
+    document.getElementById("btnHelpClose").addEventListener("click", function(){ closeModal(helpModal); });
+    document.getElementById("btnHelpOk").addEventListener("click", function(){ closeModal(helpModal); });
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape"){ if(!setupModal.hidden) closeModal(setupModal); else if(!helpModal.hidden) closeModal(helpModal); } });
+    window.addEventListener("resize", function(){ if(custom.autoScroll) chatEl.scrollTop = chatEl.scrollHeight; updateBubbles(); });
+  }
+
+  function init(){
+    bindEvents();
+    bindPanel();
+    fillPanel();
+    applyCustom();
+    updateThemeColorLabel();
+    applySettings();
+    fillSetup();
+    if (typeof lucide !== "undefined" && lucide.createIcons) { lucide.createIcons(); }
+    if(settings.channel){ connect(settings.channel); } else { openSetup(); }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
